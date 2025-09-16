@@ -1,0 +1,39 @@
+[Unit]
+Description=Kiosk Webhook API
+After=network-online.target
+
+[Service]
+User=kiosk
+Group=kiosk
+Environment=KIOSK_TOKEN=CHANGE_ME
+ExecStart=/home/kiosk/.venv/bin/python /opt/kiosk-webhook.py
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# When url.txt changes, restart kiosk-browser (to open the new page)
+sudo tee /etc/systemd/system/kiosk-url.path > /dev/null <<'EOF'
+[Unit]
+Description=Watch kiosk URL file
+
+[Path]
+PathChanged=/var/lib/kiosk/url.txt
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo tee /etc/systemd/system/kiosk-url.service > /dev/null <<'EOF'
+[Unit]
+Description=Restart kiosk browser on URL change
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/systemctl restart kiosk-browser.service
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now kiosk-webhook.service kiosk-url.path
